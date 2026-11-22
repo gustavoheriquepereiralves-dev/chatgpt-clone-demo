@@ -164,10 +164,11 @@ function newChat() {
 }
 
 function responseFor(prompt) {
-  const lower = prompt.toLocaleLowerCase('pt-BR');
-  if (/\b(oi|olá|ola|bom dia|boa tarde|boa noite)\b/.test(lower)) {
-    return 'Olá! Posso ajudar com ideias, explicações, escrita e planejamento. O que você gostaria de fazer?';
-  }
+  const lower = prompt.toLocaleLowerCase('pt-BR').normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+  if (/\b(oi|ola|eae|e ai|opa|bom dia|boa tarde|boa noite|fala|salve)\b/.test(lower)) return 'Oi! Bom dia 😊 Como posso ajudar você hoje?';
+  if (/\b(tudo bem|como voce esta|como voce vai|como vc esta|como vc ta)\b/.test(lower)) return 'Tudo certo por aqui! E com você? O que vamos fazer hoje?';
+  if (/\b(obrigad[oa]s?|valeu|agradeco)\b/.test(lower)) return 'Por nada! Se precisar de mais alguma coisa, é só falar.';
+  if (/\b(tchau|ate mais|ate logo|falou|fui)\b/.test(lower)) return 'Até mais! Estarei por aqui quando precisar.';
   if (/planej|projeto|organizar/.test(lower)) {
     return `Vamos transformar isso em um plano simples:\n\n1. **Defina o objetivo:** escreva em uma frase o resultado que você quer alcançar.\n2. **Divida em etapas:** liste entregas pequenas que possam ser concluídas uma de cada vez.\n3. **Escolha a próxima ação:** comece pela tarefa mais curta que destrava o restante.\n4. **Revise o progresso:** reserve um momento para ajustar as prioridades.\n\nSe você me contar um pouco mais sobre o projeto, posso adaptar essas etapas.`;
   }
@@ -181,6 +182,23 @@ function responseFor(prompt) {
     return 'Aqui vão alguns caminhos para explorar:\n\n• Faça algo que nunca experimentou na sua região.\n• Escolha um tema e monte um pequeno projeto de uma tarde.\n• Convide alguém para trocar recomendações de livros, filmes ou lugares.\n\nSe você disser seus interesses e quanto tempo tem, posso sugerir opções mais específicas.';
   }
   return 'Olá! Posso consultar fontes públicas para responder perguntas com informações atuais.';
+}
+
+function interpretMessage(prompt) {
+  const normalized = prompt.toLocaleLowerCase('pt-BR').normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[¿¡!?.,;:()[\]{}]/g, ' ');
+  const greetingOnly = normalized
+    .replace(/\b(oi|ola|eae|e ai|opa|bom|dia|boa|tarde|noite|hey|hello|fala|salve|chat|chatgpt|assistente|tudo|bem)\b/g, ' ')
+    .replace(/\s+/g, ' ').trim();
+  if (!greetingOnly) return 'greeting';
+  if (/^\s*(tudo bem|como voce esta|como voce vai|como vc esta|como vc ta)\s*$/.test(normalized)) return 'smalltalk';
+  if (/\b(obrigad[oa]s?|valeu|agradeco)\b/.test(normalized) && !/\b(por que|como|qual|o que)\b/.test(normalized)) return 'thanks';
+  if (/\b(tchau|ate mais|ate logo|falou|fui)\b/.test(normalized) && !/\b(quem|quando|onde|como|qual|o que)\b/.test(normalized)) return 'farewell';
+  return 'research';
+}
+
+function responseForIntent(prompt, intent) {
+  if (intent === 'greeting' || intent === 'smalltalk' || intent === 'thanks' || intent === 'farewell') return responseFor(prompt);
+  return '';
 }
 
 function responseFromSources(prompt, sources) {
@@ -231,9 +249,9 @@ async function sendMessage(text = input.value) {
   appendMessage('assistant', '', { typing: true });
   sendButton.disabled = true;
   try {
-    const greeting = /^(oi|olá|ola|bom dia|boa tarde|boa noite)[!. ]*$/i.test(prompt);
-    const sources = greeting ? [] : await searchChatSources(prompt);
-    const answer = greeting ? responseFor(prompt) : responseFromSources(prompt, sources);
+    const intent = interpretMessage(prompt);
+    const sources = intent === 'research' ? await searchChatSources(prompt) : [];
+    const answer = intent === 'research' ? responseFromSources(prompt, sources) : responseForIntent(prompt, intent);
     chat.messages.push({ role: 'assistant', text: answer, sources });
   } catch {
     const answer = 'Não consegui consultar as fontes agora. Confira sua conexão e tente novamente. Esta conversa precisa de uma conexão com um serviço de IA para responder sem pesquisa.';

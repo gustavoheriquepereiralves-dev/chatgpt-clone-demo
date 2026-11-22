@@ -8,7 +8,7 @@ Abra `index.html` em um navegador moderno. Não há instalação nem servidor ne
 
 ## Limites desta versão
 
-- Perguntas na conversa consultam Wikipedia em português e inglês ao vivo, e projetos públicos do GitHub quando o assunto é tecnologia; a resposta mostra trechos das fontes e links. Não há modelo de IA conectado para síntese livre.
+- A conversa reconhece cumprimentos, agradecimentos e despedidas sem pesquisar esses textos. Perguntas consultam Wikipedia em português e inglês ao vivo, e projetos públicos do GitHub quando o assunto é tecnologia; a resposta mostra trechos das fontes e links. Não há modelo de IA conectado para interpretação livre.
 - Astra 6, Luna 6, Orion 5 e Vega 5 são nomes demonstrativos. Os níveis de esforço e os planos Free, Plus, Pro e Team são apenas controles visuais, sem cobrança ou recursos reais.
 - A tela de pesquisa ao vivo consulta Wikipedia em português e inglês e projetos públicos do GitHub em paralelo; também oferece links para buscadores externos.
 - O criador gera modelos HTML/CSS/JavaScript, inclui arquivos de exemplo para React e PWA/Android WebView, permite editar e pré-visualizar e exporta um ZIP. Os projetos são scaffolds demonstrativos; não há geração livre por IA, backend, login real nem compilação de APK.
