@@ -172,7 +172,7 @@ function newChat() {
 }
 
 function responseFor(prompt) {
-  const lower = prompt.toLocaleLowerCase('pt-BR').normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+  const lower = normalizeIntentText(prompt);
   if (/\b(oi|ola|eae|e ai|opa|bom dia|boa tarde|boa noite|fala|salve)\b/.test(lower)) return 'Oi! Bom dia 😊 Como posso ajudar você hoje?';
   if (/\b(tudo bem|como voce esta|como voce vai|como vc esta|como vc ta)\b/.test(lower)) return 'Tudo certo por aqui! E com você? O que vamos fazer hoje?';
   if (/\b(obrigad[oa]s?|valeu|agradeco)\b/.test(lower)) return 'Por nada! Se precisar de mais alguma coisa, é só falar.';
@@ -192,13 +192,36 @@ function responseFor(prompt) {
   return 'Olá! Posso consultar fontes públicas para responder perguntas com informações atuais.';
 }
 
+function editDistanceOne(left, right) {
+  if (Math.abs(left.length - right.length) > 1) return false;
+  let row = Array.from({ length: right.length + 1 }, (_, index) => index);
+  for (let i = 1; i <= left.length; i += 1) {
+    const next = [i];
+    for (let j = 1; j <= right.length; j += 1) {
+      next[j] = Math.min(next[j - 1] + 1, row[j] + 1, row[j - 1] + (left[i - 1] === right[j - 1] ? 0 : 1));
+    }
+    row = next;
+  }
+  return row[right.length] <= 1;
+}
+
+function normalizeIntentText(prompt) {
+  const normalized = prompt.toLocaleLowerCase('pt-BR').normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/(.)\1{2,}/g, '$1');
+  const commonWords = ['bom', 'dia', 'boa', 'tarde', 'noite', 'oi', 'ola', 'eae', 'opa', 'obrigado', 'obrigada', 'tchau', 'hoje', 'hora', 'horas', 'que', 'qual', 'data', 'agora', 'e', 'sao'];
+  return normalized.replace(/[¿¡!?.,;:()[\]{}]/g, ' ').split(/\s+/).filter(Boolean).map((word) => {
+    const correction = commonWords.find((candidate) => word.length >= 3 && editDistanceOne(word, candidate));
+    return correction || word;
+  }).join(' ');
+}
+
 function interpretMessage(prompt) {
-  const normalized = prompt.toLocaleLowerCase('pt-BR').normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[¿¡!?.,;:()[\]{}]/g, ' ');
+  const normalized = normalizeIntentText(prompt);
   const greetingOnly = normalized
     .replace(/\b(oi|ola|eae|e ai|opa|bom|dia|boa|tarde|noite|hey|hello|fala|salve|chat|chatgpt|assistente|tudo|bem)\b/g, ' ')
     .replace(/\s+/g, ' ').trim();
   if (!greetingOnly) return 'greeting';
   if (/^\s*(tudo bem|como voce esta|como voce vai|como vc esta|como vc ta)\s*$/.test(normalized)) return 'smalltalk';
+  if (/\b(que horas?(?: e| sao)?|qual (?:e )?(?:a )?hora|qual (?:e o )?horario|horario atual|hora atual)\b/.test(normalized)) return 'current_time';
   if (/\b(que dia(?: da semana)? (?:e )?hoje|qual (?:e a )?data de hoje|data de hoje|dia de hoje|hoje e que dia|que data e hoje)\b/.test(normalized)) return 'today';
   if (/\b(obrigad[oa]s?|valeu|agradeco)\b/.test(normalized) && !/\b(por que|como|qual|o que)\b/.test(normalized)) return 'thanks';
   if (/\b(tchau|ate mais|ate logo|falou|fui)\b/.test(normalized) && !/\b(quem|quando|onde|como|qual|o que)\b/.test(normalized)) return 'farewell';
@@ -206,6 +229,10 @@ function interpretMessage(prompt) {
 }
 
 function responseForIntent(prompt, intent) {
+  if (intent === 'current_time') {
+    const time = new Intl.DateTimeFormat('pt-BR', { hour: '2-digit', minute: '2-digit', hourCycle: 'h23' }).format(new Date());
+    return `Agora são ${time}.`;
+  }
   if (intent === 'today') {
     const date = new Intl.DateTimeFormat('pt-BR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }).format(new Date());
     return `Hoje é ${date}.`;
@@ -226,7 +253,7 @@ function setAdvancedProgrammingProfile() {
 function responseFromSources(prompt, sources) {
   const relevant = sources.filter((source) => source.description).slice(0, 3);
   if (!relevant.length) {
-    return `Não encontrei trechos úteis nas fontes públicas consultadas para “${prompt}”. Você pode tentar reformular a busca ou abrir um buscador para ampliar os resultados. Esta conversa ainda não está conectada a um modelo de IA.`;
+    return `Não encontrei uma fonte relevante para “${prompt}”. Tente reformular a pergunta.`;
   }
   if (/\b(dom\s+pedro|d\.?\s*pedro)\b/i.test(prompt) && /\b(nasceu|nascimento|aniversario|dia)\b/i.test(prompt)) {
     const asksSecond = /\bpedro\s*(ii|2)\b/i.test(prompt);
@@ -236,8 +263,8 @@ function responseFromSources(prompt, sources) {
     if (source && date) return `Se você se refere a Dom Pedro ${asksSecond ? 'II' : 'I'} do Brasil, ele nasceu em ${date}. Encontrei essa data na fonte abaixo; abra o artigo para conferir o contexto.`;
     return 'Entendi que você pergunta sobre o nascimento de Dom Pedro, mas não consegui confirmar a data em uma página relevante. Tente especificar Dom Pedro I ou Dom Pedro II.';
   }
-  const excerpts = relevant.map((source) => `• ${source.description}`).join('\n\n');
-  return `Pesquisei “${prompt}” agora. Estes são os trechos mais relevantes que encontrei:\n\n${excerpts}\n\nO resumo acima foi montado a partir dos trechos das fontes listadas; abra os links para conferir o contexto completo.`;
+  const excerpt = relevant[0].description.replace(/\s+/g, ' ').trim();
+  return excerpt.length > 240 ? `${excerpt.slice(0, 237).replace(/\s+\S*$/, '')}…` : excerpt;
 }
 
 async function searchChatSources(prompt) {
