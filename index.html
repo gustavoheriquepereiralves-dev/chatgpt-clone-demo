@@ -26,6 +26,9 @@
           <button class="nav-item active" id="newChatButton"><span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg></span><span>Nova conversa</span><kbd>Ctrl K</kbd></button>
           <button class="nav-item" id="searchButton"><span class="nav-icon"><svg viewBox="0 0 24 24"><circle cx="10.8" cy="10.8" r="6.4"/><path d="m16 16 4.5 4.5"/></svg></span><span>Buscar conversas</span></button>
           <button class="nav-item" id="libraryButton"><span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M5 4.5h14v15H5zM8 8h8M8 11.5h8M8 15h5"/></svg></span><span>Biblioteca</span></button>
+          <button class="nav-item" id="researchButton"><span class="nav-icon"><svg viewBox="0 0 24 24"><circle cx="10.5" cy="10.5" r="6.5"/><path d="m15.5 15.5 4 4M4 19h5"/></svg></span><span>Pesquisar na internet</span></button>
+          <button class="nav-item" id="createSiteButton"><span class="nav-icon"><svg viewBox="0 0 24 24"><rect x="3.5" y="4" width="17" height="16" rx="2.5"/><path d="M3.5 8h17M7 6h.01M10 6h.01M8 12h8M8 15.5h5"/></svg></span><span>Criar site</span></button>
+          <button class="nav-item" id="createAppButton"><span class="nav-icon"><svg viewBox="0 0 24 24"><rect x="6" y="2.5" width="12" height="19" rx="2.5"/><path d="M10 18.5h4"/></svg></span><span>Criar aplicativo</span></button>
         </nav>
 
         <div class="projects-heading"><span>Projetos</span><button class="tiny-button" id="addProject" aria-label="Adicionar projeto" title="Adicionar projeto"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg></button></div>
@@ -73,6 +76,32 @@
         </section>
       </main>
       <div class="popover" id="popover" hidden></div>
+      <div class="workspace-overlay" id="researchOverlay" hidden>
+        <section class="workspace-dialog research-dialog" role="dialog" aria-modal="true" aria-labelledby="researchTitle">
+          <header class="workspace-header"><div><p class="eyebrow">PESQUISA AO VIVO</p><h2 id="researchTitle">Pesquisar na internet</h2><p>Resultados atuais com links para conferir as fontes.</p></div><button class="icon-button close-workspace" data-close-workspace aria-label="Fechar pesquisa">×</button></header>
+          <form class="research-form" id="researchForm"><label class="sr-only" for="researchInput">O que você quer pesquisar?</label><input id="researchInput" type="search" placeholder="Pesquise um assunto, notícia ou tutorial…" required><button type="submit">Pesquisar</button></form>
+          <div class="search-engines" id="searchEngines" hidden></div>
+          <button class="secondary-action" id="researchToBuilder" type="button" hidden>Criar um projeto com esta pesquisa</button>
+          <div class="research-results" id="researchResults"><p class="empty-state">Pesquise para consultar Wikipedia em português e inglês e projetos públicos do GitHub ao mesmo tempo.</p></div>
+          <p class="workspace-note">Os resultados são encontrados pelas fontes indicadas; confira o conteúdo original antes de usar.</p>
+        </section>
+      </div>
+      <div class="workspace-overlay" id="builderOverlay" hidden>
+        <section class="workspace-dialog builder-dialog" role="dialog" aria-modal="true" aria-labelledby="builderTitle">
+          <header class="workspace-header"><div><p class="eyebrow">ESTÚDIO DE CRIAÇÃO</p><h2 id="builderTitle">Criador de sites</h2><p id="builderSubtitle">Descreva sua ideia e gere um projeto editável com prévia.</p></div><button class="icon-button close-workspace" data-close-workspace aria-label="Fechar criador">×</button></header>
+          <div class="builder-controls">
+            <label class="builder-prompt-label" for="builderPrompt">O que você quer criar?</label>
+            <textarea id="builderPrompt" rows="2" placeholder="Ex.: uma loja de roupas sustentáveis com catálogo e formulário de contato"></textarea>
+            <div class="builder-options"><label>Projeto<select id="projectType"><option value="landing">Landing page</option><option value="store">Loja virtual</option><option value="portfolio">Portfólio</option><option value="dashboard">Painel administrativo</option><option value="login">Login e cadastro</option></select></label><label>Formato<select id="projectFormat"><option value="web">HTML, CSS e JavaScript</option><option value="react">React</option><option value="pwa">App web instalável / Android (PWA)</option></select></label><button class="primary-action" id="generateProject" type="button">Gerar projeto</button></div>
+          </div>
+          <div class="builder-workspace">
+            <aside class="file-rail"><h3>Arquivos</h3><div id="projectFilesList"><p class="empty-state">Seu projeto aparecerá aqui.</p></div><button class="export-button" id="exportZip" type="button" disabled>Baixar projeto ZIP</button></aside>
+            <section class="code-editor-pane"><div class="pane-heading"><h3 id="editorFileName">Código</h3><span>Editor</span></div><textarea id="codeEditor" spellcheck="false" aria-label="Editor de código" placeholder="Gere um projeto para editar os arquivos."></textarea></section>
+            <section class="preview-pane"><div class="pane-heading"><h3>Prévia</h3><span>Visualização local</span></div><iframe id="projectPreview" title="Prévia do projeto gerado" sandbox="allow-scripts allow-forms"></iframe></section>
+          </div>
+          <p class="workspace-note">O gerador cria modelos editáveis no navegador. Não publica projetos nem compila APKs; o formato PWA pode ser empacotado no Android Studio.</p>
+        </section>
+      </div>
       <input type="file" id="fileInput" hidden multiple />
       <div class="toast" id="toast" role="status" aria-live="polite"></div>
     </div>

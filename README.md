@@ -10,7 +10,9 @@ Abra `index.html` em um navegador moderno. Não há instalação nem servidor ne
 
 - As respostas são exemplos locais; nenhum modelo de IA ou serviço online está conectado.
 - Astra 6, Luna 6, Orion 5 e Vega 5 são nomes demonstrativos. Os níveis de esforço e os planos Free, Plus, Pro e Team são apenas controles visuais, sem cobrança ou recursos reais.
-- Pesquisa na web, voz, anexos, projetos, biblioteca, compartilhamento de conversas e conta são itens visuais demonstrativos.
+- A pesquisa ao vivo consulta Wikipedia em português e inglês e projetos públicos do GitHub; também oferece links para buscadores externos. Ela mostra resultados e fontes, mas não sintetiza uma resposta com IA.
+- O criador gera modelos HTML/CSS/JavaScript, inclui arquivos de exemplo para React e PWA/Android WebView, permite editar e pré-visualizar e exporta um ZIP. Os projetos são scaffolds demonstrativos; não há geração livre por IA, backend, login real nem compilação de APK.
+- Voz, anexos, biblioteca, compartilhamento de conversas e conta continuam demonstrativos.
 - O histórico fica no armazenamento local deste navegador. Use **Limpar conversas** no menu para removê-lo.
 
 ## Como foi analisado
