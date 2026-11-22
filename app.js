@@ -181,6 +181,14 @@ function responseFromSources(prompt, sources) {
   if (!relevant.length) {
     return `Não encontrei trechos úteis nas fontes públicas consultadas para “${prompt}”. Você pode tentar reformular a busca ou abrir um buscador para ampliar os resultados. Esta conversa ainda não está conectada a um modelo de IA.`;
   }
+  if (/\b(dom\s+pedro|d\.?\s*pedro)\b/i.test(prompt) && /\b(nasceu|nascimento|aniversario|dia)\b/i.test(prompt)) {
+    const asksSecond = /\bpedro\s*(ii|2)\b/i.test(prompt);
+    const personPattern = asksSecond ? /pedro\s+(ii|2)\s+do\s+brasil/i : /pedro\s+(i|1)\s+do\s+brasil|pedro\s+(i|1)\s*&\s*iv/i;
+    const source = relevant.find((item) => personPattern.test(item.title.toLocaleLowerCase('pt-BR')) && /wikipedia/.test(item.source.toLocaleLowerCase('pt-BR')));
+    const date = source?.description.match(/\b\d{1,2}\s+de\s+[a-zç]+\s+de\s+\d{4}\b/i)?.[0];
+    if (source && date) return `Se você se refere a Dom Pedro ${asksSecond ? 'II' : 'I'} do Brasil, ele nasceu em ${date}. Encontrei essa data na fonte abaixo; abra o artigo para conferir o contexto.`;
+    return 'Entendi que você pergunta sobre o nascimento de Dom Pedro, mas não consegui confirmar a data em uma página relevante. Tente especificar Dom Pedro I ou Dom Pedro II.';
+  }
   const excerpts = relevant.map((source) => `• ${source.description}`).join('\n\n');
   return `Pesquisei “${prompt}” agora. Estes são os trechos mais relevantes que encontrei:\n\n${excerpts}\n\nO resumo acima foi montado a partir dos trechos das fontes listadas; abra os links para conferir o contexto completo.`;
 }
@@ -402,8 +410,42 @@ function plainSnippet(markup) {
   return (documentCopy.body.textContent || '').replace(/\s+/g, ' ').trim();
 }
 
+function normalizedResearchQuery(query, lang = 'pt') {
+  const normalized = query.toLocaleLowerCase('pt-BR').normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+  if (/\b(dom\s+pedro|d\.?\s*pedro)\b/.test(normalized) && /\b(nasceu|nascimento|aniversario|dia)\b/.test(normalized)) {
+    if (/\bpedro\s*(ii|2)\b/.test(normalized)) return lang === 'pt' ? 'Pedro II do Brasil' : 'Pedro II of Brazil';
+    return lang === 'pt' ? 'Pedro I do Brasil' : 'Pedro I of Brazil';
+  }
+  const stopWords = new Set(['opa','que','qual','quais','quem','quando','onde','como','porque','por','favor','me','diga','conte','quero','pesquise','pesquisar','buscar','busque','dia','nasceu','nascimento','aniversario','do','da','de','dos','das','no','na','nos','nas','o','a','os','as','um','uma','e','foi','eh','ser','sobre','para','com','what','when','where','who','how','was','born','the','is','of']);
+  const terms = normalized.replace(/[^a-z0-9\s]/g, ' ').split(/\s+/).filter((word) => word && !stopWords.has(word));
+  return terms.join(' ') || query.trim();
+}
+
+function exactPersonTitle(query, lang) {
+  const normalized = query.toLocaleLowerCase('pt-BR').normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+  if (!/\b(dom\s+pedro|d\.?\s*pedro)\b/.test(normalized) || !/\b(nasceu|nascimento|aniversario|dia)\b/.test(normalized)) return '';
+  const second = /\bpedro\s*(ii|2)\b/.test(normalized);
+  if (lang === 'en') return second ? 'Pedro II of Brazil' : 'Pedro I of Brazil';
+  return second ? 'Pedro II do Brasil' : 'Pedro I do Brasil';
+}
+
 async function searchWiki(endpoint, lang, query) {
-  const params = new URLSearchParams({ action: 'query', list: 'search', srsearch: query, srprop: 'snippet', srlimit: '4', format: 'json', origin: '*' });
+  const exactTitle = exactPersonTitle(query, lang);
+  if (exactTitle) {
+    const exactParams = new URLSearchParams({ action: 'query', titles: exactTitle, redirects: '1', prop: 'extracts', exintro: '1', explaintext: '1', exchars: '1400', format: 'json', origin: '*' });
+    const exactResponse = await fetch(`${endpoint}?${exactParams}`);
+    if (!exactResponse.ok) throw new Error(`${lang}: HTTP ${exactResponse.status}`);
+    const exactData = await exactResponse.json();
+    return Object.values(exactData.query?.pages || {}).filter((page) => !page.missing).map((page) => ({
+      source: `Wikipedia ${lang}`,
+      title: page.title,
+      description: page.extract || '',
+      url: `https://${lang === 'pt' ? 'pt' : 'en'}.wikipedia.org/wiki/${encodeURIComponent(page.title.replace(/ /g, '_'))}`,
+      relevance: 100
+    }));
+  }
+  const searchQuery = normalizedResearchQuery(query, lang);
+  const params = new URLSearchParams({ action: 'query', list: 'search', srsearch: searchQuery, srprop: 'snippet', srlimit: '6', format: 'json', origin: '*' });
   const response = await fetch(`${endpoint}?${params}`);
   if (!response.ok) throw new Error(`${lang}: HTTP ${response.status}`);
   const data = await response.json();
@@ -418,12 +460,18 @@ async function searchWiki(endpoint, lang, query) {
       extracts = extractData.query?.pages || {};
     }
   }
+  const queryTerms = searchQuery.toLocaleLowerCase('pt-BR').split(/\s+/).filter((term) => term.length > 2);
   return entries.map((entry) => ({
     source: `Wikipedia ${lang}`,
     title: entry.title,
     description: extracts[entry.pageid]?.extract || plainSnippet(entry.snippet),
     url: `https://${lang === 'pt' ? 'pt' : 'en'}.wikipedia.org/wiki/${encodeURIComponent(entry.title.replace(/ /g, '_'))}`
-  }));
+  })).map((item) => {
+    const searchable = `${item.title} ${item.description}`.toLocaleLowerCase('pt-BR').normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+    const title = item.title.toLocaleLowerCase('pt-BR').normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+    const score = queryTerms.reduce((total, term) => total + (title.includes(term) ? 3 : searchable.includes(term) ? 1 : 0), 0);
+    return { ...item, relevance: score };
+  }).filter((item) => item.relevance >= Math.max(2, Math.ceil(queryTerms.length / 2))).sort((a, b) => b.relevance - a.relevance).slice(0, 4);
 }
 
 async function searchGitHub(query) {
