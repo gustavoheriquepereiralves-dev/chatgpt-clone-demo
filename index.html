@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#f9f9f8" />
+    <title>ChatGPT — protótipo local</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <div class="app-shell" id="appShell">
+      <aside class="sidebar" id="sidebar" aria-label="Barra lateral">
+        <div class="sidebar-top">
+          <a class="brand" href="#" aria-label="Início do ChatGPT">
+            <span class="brand-mark" aria-hidden="true">
+              <svg viewBox="0 0 40 40" fill="none"><path d="M20 4.4a9 9 0 0 0-8.8 7.2 8.6 8.6 0 0 0-5.1 12.1 8.7 8.7 0 0 0 7.5 12.1 9 9 0 0 0 11 0 8.7 8.7 0 0 0 7.5-12.1A8.6 8.6 0 0 0 27 11.6 9 9 0 0 0 20 4.4Z" stroke="currentColor" stroke-width="2.2"/><path d="m12 14 16 9M12 23l16-9M20 9v22" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+            </span>
+            <span>ChatGPT</span>
+          </a>
+          <button class="icon-button sidebar-toggle" id="sidebarToggle" aria-label="Fechar barra lateral" title="Fechar barra lateral">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="4" width="17" height="16" rx="3"/><path d="M9 4v16"/></svg>
+          </button>
+        </div>
+
+        <nav class="primary-nav" aria-label="Navegação principal">
+          <button class="nav-item active" id="newChatButton"><span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg></span><span>Nova conversa</span><kbd>Ctrl K</kbd></button>
+          <button class="nav-item" id="searchButton"><span class="nav-icon"><svg viewBox="0 0 24 24"><circle cx="10.8" cy="10.8" r="6.4"/><path d="m16 16 4.5 4.5"/></svg></span><span>Buscar conversas</span></button>
+          <button class="nav-item" id="libraryButton"><span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M5 4.5h14v15H5zM8 8h8M8 11.5h8M8 15h5"/></svg></span><span>Biblioteca</span></button>
+        </nav>
+
+        <div class="projects-heading"><span>Projetos</span><button class="tiny-button" id="addProject" aria-label="Adicionar projeto" title="Adicionar projeto"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg></button></div>
+        <button class="project-link" id="newProject"><span class="folder-icon">▱</span><span>Criar projeto</span></button>
+
+        <div class="history-heading">Recentes</div>
+        <div class="history-list" id="historyList" aria-label="Conversas recentes"></div>
+
+        <div class="sidebar-bottom">
+          <button class="plan-card" id="planButton"><span class="sparkle">✦</span><span><strong>Conheça os planos</strong><small>Mais recursos para você</small></span><span class="chevron">›</span></button>
+          <button class="profile" id="profileButton"><span class="avatar">G</span><span class="profile-copy"><strong>Gustavo</strong><small>Plano gratuito</small></span><svg class="more-icon" viewBox="0 0 24 24"><circle cx="5" cy="12" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/></svg></button>
+        </div>
+      </aside>
+
+      <main class="main-panel">
+        <header class="topbar">
+          <button class="icon-button open-sidebar" id="openSidebar" aria-label="Abrir barra lateral" title="Abrir barra lateral"><svg viewBox="0 0 24 24"><rect x="3.5" y="4" width="17" height="16" rx="3"/><path d="M9 4v16"/></svg></button>
+          <div class="topbar-title"><button class="model-select" id="modelSelect" aria-haspopup="listbox" aria-expanded="false"><span>ChatGPT</span><span class="model-tier">▾</span></button></div>
+          <div class="topbar-actions"><button class="share-button" id="shareButton"><svg viewBox="0 0 24 24"><path d="M12 15V3m0 0L7.5 7.5M12 3l4.5 4.5M5 13v6h14v-6"/></svg><span>Compartilhar</span></button><button class="icon-button more-button" id="moreButton" aria-label="Mais opções"><svg viewBox="0 0 24 24"><circle cx="5" cy="12" r="1.2"/><circle cx="12" cy="12" r="1.2"/><circle cx="19" cy="12" r="1.2"/></svg></button></div>
+        </header>
+
+        <section class="conversation-view" id="conversationView">
+          <div class="welcome" id="welcome">
+            <div class="welcome-mark" aria-hidden="true"><svg viewBox="0 0 40 40" fill="none"><path d="M20 4.4a9 9 0 0 0-8.8 7.2 8.6 8.6 0 0 0-5.1 12.1 8.7 8.7 0 0 0 7.5 12.1 9 9 0 0 0 11 0 8.7 8.7 0 0 0 7.5-12.1A8.6 8.6 0 0 0 27 11.6 9 9 0 0 0 20 4.4Z" stroke="currentColor" stroke-width="2.2"/><path d="m12 14 16 9M12 23l16-9M20 9v22" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></div>
+            <h1>O que vamos fazer hoje?</h1>
+            <div class="suggestions" id="suggestions">
+              <button class="suggestion" data-prompt="Me ajude a organizar minhas ideias para um projeto novo"><span class="suggestion-icon violet">✧</span><span><strong>Planejar um projeto</strong><small>Transforme uma ideia em próximos passos</small></span><span class="suggestion-arrow">↗</span></button>
+              <button class="suggestion" data-prompt="Explique um conceito difícil de um jeito simples"><span class="suggestion-icon blue">◈</span><span><strong>Aprender algo novo</strong><small>Entenda qualquer assunto com clareza</small></span><span class="suggestion-arrow">↗</span></button>
+              <button class="suggestion" data-prompt="Me ajude a escrever uma mensagem clara e simpática"><span class="suggestion-icon orange">✎</span><span><strong>Escrever melhor</strong><small>Comece um texto com uma boa estrutura</small></span><span class="suggestion-arrow">↗</span></button>
+              <button class="suggestion" data-prompt="Sugira algumas ideias criativas para o meu fim de semana"><span class="suggestion-icon green">✳</span><span><strong>Ter novas ideias</strong><small>Explore caminhos diferentes</small></span><span class="suggestion-arrow">↗</span></button>
+            </div>
+          </div>
+          <div class="messages" id="messages" aria-live="polite"></div>
+          <div class="composer-wrap" id="composerWrap">
+            <form class="composer" id="composerForm">
+              <label class="sr-only" for="promptInput">Mensagem</label>
+              <textarea id="promptInput" rows="1" placeholder="Pergunte alguma coisa" maxlength="4000"></textarea>
+              <div class="composer-toolbar">
+                <div class="composer-tools"><button type="button" class="round-tool attach-button" id="attachButton" aria-label="Adicionar arquivos" title="Adicionar arquivos"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg></button><button type="button" class="tool-pill" id="toolsButton"><svg viewBox="0 0 24 24"><path d="M12 3v3m0 12v3M3 12h3m12 0h3M5.6 5.6l2.1 2.1m8.6 8.6 2.1 2.1m0-12.8-2.1 2.1m-8.6 8.6-2.1 2.1"/><circle cx="12" cy="12" r="4"/></svg><span>Ferramentas</span><span class="down-caret">⌄</span></button></div>
+                <div class="composer-actions"><button type="button" class="tool-pill search-tool" id="webSearchButton"><svg viewBox="0 0 24 24"><circle cx="10.5" cy="10.5" r="6.5"/><path d="m15.5 15.5 4 4M4.5 10.5h12M10.5 4c2 1.8 3 4 3 6.5s-1 4.7-3 6.5c-2-1.8-3-4-3-6.5s1-4.7 3-6.5Z"/></svg><span>Pesquisar</span></button><button type="button" class="voice-button" id="voiceButton" aria-label="Iniciar conversa por voz" title="Voz"><svg viewBox="0 0 24 24"><rect x="9" y="3" width="6" height="12" rx="3"/><path d="M5.5 11a6.5 6.5 0 0 0 13 0M12 18v3m-4 0h8"/></svg></button><button type="submit" class="send-button" id="sendButton" aria-label="Enviar mensagem" disabled><svg viewBox="0 0 24 24"><path d="M12 19V5m0 0L6 11m6-6 6 6"/></svg></button></div>
+              </div>
+            </form>
+            <p class="disclaimer">As respostas deste protótipo são demonstrativas e podem não refletir informações reais.</p>
+          </div>
+        </section>
+      </main>
+      <div class="popover" id="popover" hidden></div>
+      <input type="file" id="fileInput" hidden multiple />
+      <div class="toast" id="toast" role="status" aria-live="polite"></div>
+    </div>
+    <script src="app.js"></script>
+  </body>
+</html>
