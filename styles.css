@@ -14,6 +14,9 @@
 @media(max-width:390px){.composer-tools{gap:2px}.composer-actions{gap:0}.tool-pill{gap:4px}.tool-pill svg{width:14px}.welcome h1{font-size:20px}.suggestion strong{font-size:10.5px}.suggestion small{font-size:9px}}
 
 .workspace-overlay{position:fixed;inset:0;z-index:30;padding:20px;background:rgba(15,20,17,.42);display:grid;place-items:center;backdrop-filter:blur(5px)}
+.message-sources{display:flex;align-items:center;gap:7px;flex-wrap:wrap;margin-top:11px;font-size:10px;color:var(--muted)}
+.message-source-link{border:1px solid var(--line);border-radius:999px;padding:5px 9px;color:var(--text);text-decoration:none}
+.message-source-link:hover{background:var(--hover)}
 .workspace-overlay[hidden]{display:none}
 .workspace-dialog{width:min(860px,100%);max-height:min(92dvh,940px);overflow:auto;background:var(--surface);color:var(--text);border:1px solid var(--line);border-radius:20px;box-shadow:0 25px 90px rgba(0,0,0,.22);padding:22px;display:flex;flex-direction:column;gap:16px}
 .research-dialog{width:min(800px,100%)}

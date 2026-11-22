@@ -33,8 +33,14 @@ let activePopover = null;
 function loadState() {
   try {
     const saved = JSON.parse(localStorage.getItem(STORE_KEY) || '{}');
+    const chats = Array.isArray(saved.chats) ? saved.chats : [];
+    for (const chat of chats) for (const message of chat.messages || []) {
+      if (message.role === 'assistant' && message.text?.includes('Resposta demonstrativa do protótipo local.')) {
+        message.text = 'Esta resposta antiga era apenas demonstrativa. Envie sua pergunta novamente para consultar fontes atuais.';
+      }
+    }
     return {
-      chats: Array.isArray(saved.chats) ? saved.chats : [],
+      chats,
       activeId: saved.activeId || null,
       dark: Boolean(saved.dark),
       model: MODELS.some((model) => model.name === saved.model) ? saved.model : 'Astra 6',
@@ -79,7 +85,7 @@ function renderHistory() {
   }
 }
 
-function appendMessage(role, text, { typing = false } = {}) {
+function appendMessage(role, text, { typing = false, sources = [] } = {}) {
   const article = document.createElement('article');
   article.className = `message ${role}`;
   if (role === 'assistant') {
@@ -96,6 +102,13 @@ function appendMessage(role, text, { typing = false } = {}) {
     content.textContent = text;
   }
   article.append(content);
+  if (role === 'assistant' && !typing && sources.length) {
+    const sourceList = document.createElement('div');
+    sourceList.className = 'message-sources';
+    const label = document.createElement('span'); label.textContent = 'Fontes consultadas'; sourceList.append(label);
+    sources.slice(0, 4).forEach((source) => sourceList.append(safeExternalLink(source.title, source.url, 'message-source-link')));
+    article.append(sourceList);
+  }
   if (role === 'assistant' && !typing) {
     const actions = document.createElement('div');
     actions.className = 'message-tools';
@@ -119,7 +132,7 @@ function renderChat() {
   const hasMessages = Boolean(chat?.messages?.length);
   conversationView.classList.toggle('has-messages', hasMessages);
   if (!hasMessages) return;
-  for (const message of chat.messages) appendMessage(message.role, message.text);
+  for (const message of chat.messages) appendMessage(message.role, message.text, { sources: message.sources || [] });
 }
 
 function openChat(id) {
@@ -160,12 +173,31 @@ function responseFor(prompt) {
   if (/ideia|criativ|fim de semana|sugira/.test(lower)) {
     return 'Aqui vão alguns caminhos para explorar:\n\n• Faça algo que nunca experimentou na sua região.\n• Escolha um tema e monte um pequeno projeto de uma tarde.\n• Convide alguém para trocar recomendações de livros, filmes ou lugares.\n\nSe você disser seus interesses e quanto tempo tem, posso sugerir opções mais específicas.';
   }
-  return `Entendi. Posso ajudar você a desenvolver essa ideia.\n\nUma boa forma de começar é separar o que já está claro do que ainda precisa de decisão. Qual resultado você espera obter com “${prompt.length > 120 ? `${prompt.slice(0, 117)}…` : prompt}”?\n\n_Resposta demonstrativa do protótipo local._`;
+  return 'Olá! Posso consultar fontes públicas para responder perguntas com informações atuais.';
 }
 
-function sendMessage(text = input.value) {
+function responseFromSources(prompt, sources) {
+  const relevant = sources.filter((source) => source.description).slice(0, 3);
+  if (!relevant.length) {
+    return `Não encontrei trechos úteis nas fontes públicas consultadas para “${prompt}”. Você pode tentar reformular a busca ou abrir um buscador para ampliar os resultados. Esta conversa ainda não está conectada a um modelo de IA.`;
+  }
+  const excerpts = relevant.map((source) => `• ${source.description}`).join('\n\n');
+  return `Pesquisei “${prompt}” agora. Estes são os trechos mais relevantes que encontrei:\n\n${excerpts}\n\nO resumo acima foi montado a partir dos trechos das fontes listadas; abra os links para conferir o contexto completo.`;
+}
+
+async function searchChatSources(prompt) {
+  const searches = [
+    searchWiki('https://pt.wikipedia.org/w/api.php', 'pt', prompt),
+    searchWiki('https://en.wikipedia.org/w/api.php', 'en', prompt)
+  ];
+  if (/\b(código|codigo|programa|programar|site|aplicativo|app|react|javascript|python|html|css|github|software)\b/i.test(prompt)) searches.push(searchGitHub(prompt));
+  const results = await Promise.allSettled(searches);
+  return results.flatMap((result) => result.status === 'fulfilled' ? result.value : []);
+}
+
+async function sendMessage(text = input.value) {
   const prompt = text.trim();
-  if (!prompt) return;
+  if (!prompt || sendButton.disabled) return;
   let chat = currentChat();
   if (!chat) {
     chat = { id: crypto.randomUUID(), title: titleFrom(prompt), messages: [], updatedAt: Date.now() };
@@ -180,16 +212,24 @@ function sendMessage(text = input.value) {
   saveState();
   renderHistory();
   renderChat();
+  const activeRequestId = chat.id;
   appendMessage('assistant', '', { typing: true });
   sendButton.disabled = true;
-  window.setTimeout(() => {
-    const answer = responseFor(prompt);
+  try {
+    const greeting = /^(oi|olá|ola|bom dia|boa tarde|boa noite)[!. ]*$/i.test(prompt);
+    const sources = greeting ? [] : await searchChatSources(prompt);
+    const answer = greeting ? responseFor(prompt) : responseFromSources(prompt, sources);
+    chat.messages.push({ role: 'assistant', text: answer, sources });
+  } catch {
+    const answer = 'Não consegui consultar as fontes agora. Confira sua conexão e tente novamente. Esta conversa precisa de uma conexão com um serviço de IA para responder sem pesquisa.';
     chat.messages.push({ role: 'assistant', text: answer });
+  } finally {
     chat.updatedAt = Date.now();
     saveState();
-    renderChat();
-    input.focus();
-  }, 800);
+    renderHistory();
+    if (state.activeId === activeRequestId) { renderChat(); input.focus(); }
+    sendButton.disabled = input.value.trim().length === 0;
+  }
 }
 
 function resizeInput() {
@@ -367,10 +407,21 @@ async function searchWiki(endpoint, lang, query) {
   const response = await fetch(`${endpoint}?${params}`);
   if (!response.ok) throw new Error(`${lang}: HTTP ${response.status}`);
   const data = await response.json();
-  return (data.query?.search || []).map((entry) => ({
+  const entries = data.query?.search || [];
+  const pageIds = entries.map((entry) => entry.pageid).filter(Boolean);
+  let extracts = {};
+  if (pageIds.length) {
+    const extractParams = new URLSearchParams({ action: 'query', pageids: pageIds.join('|'), prop: 'extracts', exintro: '1', explaintext: '1', exchars: '900', format: 'json', origin: '*' });
+    const extractResponse = await fetch(`${endpoint}?${extractParams}`);
+    if (extractResponse.ok) {
+      const extractData = await extractResponse.json();
+      extracts = extractData.query?.pages || {};
+    }
+  }
+  return entries.map((entry) => ({
     source: `Wikipedia ${lang}`,
     title: entry.title,
-    description: plainSnippet(entry.snippet),
+    description: extracts[entry.pageid]?.extract || plainSnippet(entry.snippet),
     url: `https://${lang === 'pt' ? 'pt' : 'en'}.wikipedia.org/wiki/${encodeURIComponent(entry.title.replace(/ /g, '_'))}`
   }));
 }
