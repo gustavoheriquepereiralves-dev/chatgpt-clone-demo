@@ -36,10 +36,16 @@ function loadState() {
     const chats = Array.isArray(saved.chats) ? saved.chats : [];
     for (const chat of chats) (chat.messages || []).forEach((message, index) => {
       const previous = chat.messages[index - 1];
+      const oldSocialSearch = message.role === 'assistant' && previous?.role === 'user'
+        && interpretMessage(previous.text || '') !== 'research'
+        && (message.text?.startsWith('Pesquisei') || message.text?.startsWith('Não encontrei trechos úteis'));
       const oldPedroSearch = message.role === 'assistant' && previous?.role === 'user'
         && /dom\s+pedro|d\.?\s*pedro/i.test(previous.text || '')
         && (message.text?.includes('Resposta demonstrativa do protótipo local.') || message.text?.startsWith('Pesquisei'));
-      if (oldPedroSearch) {
+      if (oldSocialSearch) {
+        message.text = responseForIntent(previous.text, interpretMessage(previous.text));
+        message.sources = [];
+      } else if (oldPedroSearch) {
         message.text = 'A consulta anterior trouxe resultados pouco relacionados. A busca foi corrigida; envie esta pergunta novamente para consultar a página certa.';
         message.sources = [];
       } else if (message.role === 'assistant' && message.text?.includes('Resposta demonstrativa do protótipo local.')) {
