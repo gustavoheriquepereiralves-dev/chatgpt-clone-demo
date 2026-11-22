@@ -34,11 +34,18 @@ function loadState() {
   try {
     const saved = JSON.parse(localStorage.getItem(STORE_KEY) || '{}');
     const chats = Array.isArray(saved.chats) ? saved.chats : [];
-    for (const chat of chats) for (const message of chat.messages || []) {
-      if (message.role === 'assistant' && message.text?.includes('Resposta demonstrativa do protótipo local.')) {
+    for (const chat of chats) (chat.messages || []).forEach((message, index) => {
+      const previous = chat.messages[index - 1];
+      const oldPedroSearch = message.role === 'assistant' && previous?.role === 'user'
+        && /dom\s+pedro|d\.?\s*pedro/i.test(previous.text || '')
+        && (message.text?.includes('Resposta demonstrativa do protótipo local.') || message.text?.startsWith('Pesquisei'));
+      if (oldPedroSearch) {
+        message.text = 'A consulta anterior trouxe resultados pouco relacionados. A busca foi corrigida; envie esta pergunta novamente para consultar a página certa.';
+        message.sources = [];
+      } else if (message.role === 'assistant' && message.text?.includes('Resposta demonstrativa do protótipo local.')) {
         message.text = 'Esta resposta antiga era apenas demonstrativa. Envie sua pergunta novamente para consultar fontes atuais.';
       }
-    }
+    });
     return {
       chats,
       activeId: saved.activeId || null,
