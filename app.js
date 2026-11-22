@@ -197,12 +197,17 @@ function interpretMessage(prompt) {
     .replace(/\s+/g, ' ').trim();
   if (!greetingOnly) return 'greeting';
   if (/^\s*(tudo bem|como voce esta|como voce vai|como vc esta|como vc ta)\s*$/.test(normalized)) return 'smalltalk';
+  if (/\b(que dia(?: da semana)? (?:e )?hoje|qual (?:e a )?data de hoje|data de hoje|dia de hoje|hoje e que dia|que data e hoje)\b/.test(normalized)) return 'today';
   if (/\b(obrigad[oa]s?|valeu|agradeco)\b/.test(normalized) && !/\b(por que|como|qual|o que)\b/.test(normalized)) return 'thanks';
   if (/\b(tchau|ate mais|ate logo|falou|fui)\b/.test(normalized) && !/\b(quem|quando|onde|como|qual|o que)\b/.test(normalized)) return 'farewell';
   return 'research';
 }
 
 function responseForIntent(prompt, intent) {
+  if (intent === 'today') {
+    const date = new Intl.DateTimeFormat('pt-BR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }).format(new Date());
+    return `Hoje é ${date}.`;
+  }
   if (intent === 'greeting' || intent === 'smalltalk' || intent === 'thanks' || intent === 'farewell') return responseFor(prompt);
   return '';
 }
