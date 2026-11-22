@@ -23,6 +23,7 @@ const PLANS = [
   { name: 'Pro', description: 'Para tarefas mais exigentes', detail: 'Todos os modelos e esforço máximo' },
   { name: 'Team', description: 'Um espaço para trabalhar em equipe', detail: 'Recursos compartilhados em uma demonstração' }
 ];
+const PROGRAMMING_PATTERN = /\b(codigo|programacao|programar|programa|desenvolv|software|site|aplicativo|app|react|javascript|typescript|python|html|css|api|bug|erro no codigo|funcao|componente)\b/i;
 const assistantMark = '<svg viewBox="0 0 40 40" fill="none" aria-hidden="true"><path d="M20 4.4a9 9 0 0 0-8.8 7.2 8.6 8.6 0 0 0-5.1 12.1 8.7 8.7 0 0 0 7.5 12.1 9 9 0 0 0 11 0 8.7 8.7 0 0 0 7.5-12.1A8.6 8.6 0 0 0 27 11.6 9 9 0 0 0 20 4.4Z" stroke="currentColor" stroke-width="2.2"/><path d="m12 14 16 9M12 23l16-9M20 9v22" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>';
 const copyIcon = '<svg viewBox="0 0 24 24"><rect x="8" y="8" width="12" height="12" rx="2"/><path d="M16 8V5a1 1 0 0 0-1-1H5a1 1 0 0 0-1 1v10a1 1 0 0 0 1 1h3"/></svg>';
 
@@ -56,12 +57,13 @@ function loadState() {
       chats,
       activeId: saved.activeId || null,
       dark: Boolean(saved.dark),
-      model: MODELS.some((model) => model.name === saved.model) ? saved.model : 'Astra 6',
-      effort: EFFORT_LEVELS.includes(saved.effort) ? saved.effort : 'Médio',
-      plan: PLANS.some((plan) => plan.name === saved.plan) ? saved.plan : 'Free'
+      model: !saved.programmingProfileConfigured ? 'Orion 5' : MODELS.some((model) => model.name === saved.model) ? saved.model : 'Orion 5',
+      effort: !saved.programmingProfileConfigured ? 'Máximo' : EFFORT_LEVELS.includes(saved.effort) ? saved.effort : 'Máximo',
+      plan: PLANS.some((plan) => plan.name === saved.plan) ? saved.plan : 'Free',
+      programmingProfileConfigured: true
     };
   } catch {
-    return { chats: [], activeId: null, dark: false, model: 'Astra 6', effort: 'Médio', plan: 'Free' };
+    return { chats: [], activeId: null, dark: false, model: 'Orion 5', effort: 'Máximo', plan: 'Free', programmingProfileConfigured: true };
   }
 }
 
@@ -212,6 +214,15 @@ function responseForIntent(prompt, intent) {
   return '';
 }
 
+function setAdvancedProgrammingProfile() {
+  state.model = 'Orion 5';
+  state.effort = 'Máximo';
+  state.programmingProfileConfigured = true;
+  saveState();
+  renderModelSelect();
+  showToast('Perfil de programação: Orion 5 · esforço máximo. Modelo demonstrativo.');
+}
+
 function responseFromSources(prompt, sources) {
   const relevant = sources.filter((source) => source.description).slice(0, 3);
   if (!relevant.length) {
@@ -242,6 +253,7 @@ async function searchChatSources(prompt) {
 async function sendMessage(text = input.value) {
   const prompt = text.trim();
   if (!prompt || sendButton.disabled) return;
+  if (PROGRAMMING_PATTERN.test(prompt)) setAdvancedProgrammingProfile();
   let chat = currentChat();
   if (!chat) {
     chat = { id: crypto.randomUUID(), title: titleFrom(prompt), messages: [], updatedAt: Date.now() };
@@ -319,6 +331,10 @@ function showMenu(kind, anchor) {
       option.setAttribute('aria-pressed', String(state.model === model.name));
       popover.append(option);
     }
+    const programmingOption = menuButton('Programação avançada', 'Orion 5 · esforço máximo', setAdvancedProgrammingProfile);
+    programmingOption.classList.toggle('selected-option', state.model === 'Orion 5' && state.effort === 'Máximo');
+    programmingOption.setAttribute('aria-pressed', String(state.model === 'Orion 5' && state.effort === 'Máximo'));
+    popover.append(programmingOption);
     popover.append(divider());
     popover.append(sectionLabel('Nível de esforço'));
     const effortGrid = document.createElement('div');
