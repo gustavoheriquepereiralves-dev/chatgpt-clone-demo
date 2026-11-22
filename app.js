@@ -10,7 +10,8 @@ const popover = $('#popover');
 const toastNode = $('#toast');
 
 const STORE_KEY = 'chatgpt-local-prototype-v1';
-const AI_CHAT_API_URL = window.APP_CONFIG?.chatApiUrl || (location.hostname.endsWith('.github.io') ? '' : '/api/chat');
+const STATIC_ONLY_HOST = location.protocol === 'file:' || location.hostname.endsWith('.github.io');
+const AI_CHAT_API_URL = window.APP_CONFIG?.chatApiUrl || (STATIC_ONLY_HOST ? '' : '/api/chat');
 const MODELS = [
   { name: 'Astra 6', description: 'Claude Sonnet 5.5 · uso geral' },
   { name: 'Luna 6', description: 'Claude Haiku 5.5 · respostas rápidas' },
