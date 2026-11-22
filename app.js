@@ -253,15 +253,20 @@ function setAdvancedProgrammingProfile() {
 
 async function requestAssistantReply(messages) {
   if (!AI_CHAT_API_URL) throw new Error('A IA ainda não está conectada a este link. O chat precisa ser publicado com o servidor seguro do Claude.');
-  const response = await fetch(AI_CHAT_API_URL, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      model: state.model,
-      effort: state.effort,
-      messages: messages.slice(-20).map((message) => ({ role: message.role, content: message.text }))
-    })
-  });
+  let response;
+  try {
+    response = await fetch(AI_CHAT_API_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: state.model,
+        effort: state.effort,
+        messages: messages.slice(-20).map((message) => ({ role: message.role, content: message.text }))
+      })
+    });
+  } catch {
+    throw new Error('Não consegui alcançar o servidor do Claude. Este link do GitHub Pages ainda não tem a API ativa; publique o projeto na Vercel para conectar o chat.');
+  }
   const result = await response.json().catch(() => ({}));
   if (!response.ok) throw new Error(result.error || 'O Claude não conseguiu responder agora.');
   if (!result.text) throw new Error('O Claude retornou uma resposta vazia. Tente novamente.');
