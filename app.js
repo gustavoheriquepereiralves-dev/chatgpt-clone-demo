@@ -10,11 +10,12 @@ const popover = $('#popover');
 const toastNode = $('#toast');
 
 const STORE_KEY = 'chatgpt-local-prototype-v1';
+const AI_CHAT_API_URL = window.APP_CONFIG?.chatApiUrl || (location.hostname.endsWith('.github.io') ? '' : '/api/chat');
 const MODELS = [
-  { name: 'Astra 6', description: 'Equilibrado para tarefas do dia a dia' },
-  { name: 'Luna 6', description: 'Respostas rápidas e diretas' },
-  { name: 'Orion 5', description: 'Análise, raciocínio e código' },
-  { name: 'Vega 5', description: 'Escrita e ideias criativas' }
+  { name: 'Astra 6', description: 'Claude Sonnet 5.5 · uso geral' },
+  { name: 'Luna 6', description: 'Claude Haiku 5.5 · respostas rápidas' },
+  { name: 'Orion 5', description: 'Claude Opus 5.5 · programação avançada' },
+  { name: 'Vega 5', description: 'Claude Fable 5.2 · raciocínio avançado' }
 ];
 const EFFORT_LEVELS = ['Baixo', 'Médio', 'Alto', 'Máximo'];
 const PLANS = [
@@ -247,7 +248,24 @@ function setAdvancedProgrammingProfile() {
   state.programmingProfileConfigured = true;
   saveState();
   renderModelSelect();
-  showToast('Perfil de programação: Orion 5 · esforço máximo. Modelo demonstrativo.');
+  showToast('Programação avançada: Claude Opus 5.5 · esforço máximo.');
+}
+
+async function requestAssistantReply(messages) {
+  if (!AI_CHAT_API_URL) throw new Error('A IA ainda não está conectada a este link. O chat precisa ser publicado com o servidor seguro do Claude.');
+  const response = await fetch(AI_CHAT_API_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      model: state.model,
+      effort: state.effort,
+      messages: messages.slice(-20).map((message) => ({ role: message.role, content: message.text }))
+    })
+  });
+  const result = await response.json().catch(() => ({}));
+  if (!response.ok) throw new Error(result.error || 'O Claude não conseguiu responder agora.');
+  if (!result.text) throw new Error('O Claude retornou uma resposta vazia. Tente novamente.');
+  return { text: result.text, sources: Array.isArray(result.sources) ? result.sources : [] };
 }
 
 function responseFromSources(prompt, sources) {
@@ -300,11 +318,14 @@ async function sendMessage(text = input.value) {
   sendButton.disabled = true;
   try {
     const intent = interpretMessage(prompt);
-    const sources = intent === 'research' ? await searchChatSources(prompt) : [];
-    const answer = intent === 'research' ? responseFromSources(prompt, sources) : responseForIntent(prompt, intent);
-    chat.messages.push({ role: 'assistant', text: answer, sources });
-  } catch {
-    const answer = 'Não consegui consultar as fontes agora. Confira sua conexão e tente novamente. Esta conversa precisa de uma conexão com um serviço de IA para responder sem pesquisa.';
+    if (intent === 'research') {
+      const reply = await requestAssistantReply(chat.messages);
+      chat.messages.push({ role: 'assistant', text: reply.text, sources: reply.sources });
+    } else {
+      chat.messages.push({ role: 'assistant', text: responseForIntent(prompt, intent), sources: [] });
+    }
+  } catch (error) {
+    const answer = error.message || 'Não consegui conectar ao Claude agora. Tente novamente.';
     chat.messages.push({ role: 'assistant', text: answer });
   } finally {
     chat.updatedAt = Date.now();

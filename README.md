@@ -1,19 +1,25 @@
 # Protótipo local de chat
 
-Uma interface de conversa em português inspirada no fluxo geral do ChatGPT. Os arquivos foram criados como um protótipo independente, com layout responsivo, conversas salvas localmente no navegador, tema claro/escuro e respostas demonstrativas.
+Uma interface de conversa em português com integração opcional ao Claude, pesquisa na web, conversas salvas localmente no navegador e um criador de projetos demonstrativo.
 
 ## Abrir
 
-Abra `index.html` em um navegador moderno. Não há instalação nem servidor necessários.
+O site estático abre como demonstração visual. Para usar o chat com Claude, publique este repositório na Vercel e configure a chave secreta conforme a seção abaixo.
 
-## Limites desta versão
+## Recursos e limites
 
-- A conversa reconhece cumprimentos, agradecimentos e despedidas sem pesquisar esses textos. Perguntas consultam Wikipedia em português e inglês ao vivo, e projetos públicos do GitHub quando o assunto é tecnologia; a resposta mostra trechos das fontes e links. Não há modelo de IA conectado para interpretação livre.
-- Astra 6, Luna 6, Orion 5 e Vega 5 são nomes demonstrativos. O perfil de programação seleciona Orion 5 e esforço máximo, inclusive automaticamente em pedidos de código; os controles não conectam um modelo real nem alteram a capacidade de gerar código.
+- A conversa usa Claude pela Messages API quando o servidor estiver configurado. Pesquisas de notícias e informações atuais podem usar a busca web do Claude, com fontes.
+- Astra 6, Luna 6, Orion 5 e Vega 5 são atalhos do protótipo para modelos Claude reais. O perfil de programação usa Claude Opus 5.5 e esforço máximo; pedidos de programação ativam esse perfil automaticamente.
 - A tela de pesquisa ao vivo consulta Wikipedia em português e inglês e projetos públicos do GitHub em paralelo; também oferece links para buscadores externos.
 - O criador gera modelos HTML/CSS/JavaScript, inclui arquivos de exemplo para React e PWA/Android WebView, permite editar e pré-visualizar e exporta um ZIP. Os projetos são scaffolds demonstrativos; não há geração livre por IA, backend, login real nem compilação de APK.
 - Voz, anexos, biblioteca, compartilhamento de conversas e conta continuam demonstrativos.
 - O histórico fica no armazenamento local deste navegador. Use **Limpar conversas** no menu para removê-lo.
+
+## Publicar com a IA conectada
+
+O GitHub Pages publica somente os arquivos estáticos deste site. Para ativar o Claude, importe o repositório na Vercel e adicione `ANTHROPIC_API_KEY` como variável secreta do projeto. A chave não deve ser colocada em arquivos do site nem enviada em mensagens. Configure um limite de gastos na conta Anthropic e faça um novo deploy depois de adicionar a variável.
+
+A API Anthropic é cobrada conforme o uso. Mensagens enviadas ao assistente são processadas pelo serviço Claude.
 
 ## Como foi analisado
 

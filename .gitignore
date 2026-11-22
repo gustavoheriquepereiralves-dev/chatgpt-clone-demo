@@ -1,3 +1,5 @@
-rea-evidence.json
-.DS_Store
-Thumbs.db
+node_modules/
+.vercel/
+.env
+.env.*
+!.env.example
