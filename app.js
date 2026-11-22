@@ -10,6 +10,19 @@ const popover = $('#popover');
 const toastNode = $('#toast');
 
 const STORE_KEY = 'chatgpt-local-prototype-v1';
+const MODELS = [
+  { name: 'Astra 6', description: 'Equilibrado para tarefas do dia a dia' },
+  { name: 'Luna 6', description: 'Respostas rápidas e diretas' },
+  { name: 'Orion 5', description: 'Análise, raciocínio e código' },
+  { name: 'Vega 5', description: 'Escrita e ideias criativas' }
+];
+const EFFORT_LEVELS = ['Baixo', 'Médio', 'Alto', 'Máximo'];
+const PLANS = [
+  { name: 'Free', description: 'Acesso essencial para começar', detail: 'Modelos básicos e esforço baixo ou médio' },
+  { name: 'Plus', description: 'Mais recursos para uso frequente', detail: 'Todos os modelos e esforço alto' },
+  { name: 'Pro', description: 'Para tarefas mais exigentes', detail: 'Todos os modelos e esforço máximo' },
+  { name: 'Team', description: 'Um espaço para trabalhar em equipe', detail: 'Recursos compartilhados em uma demonstração' }
+];
 const assistantMark = '<svg viewBox="0 0 40 40" fill="none" aria-hidden="true"><path d="M20 4.4a9 9 0 0 0-8.8 7.2 8.6 8.6 0 0 0-5.1 12.1 8.7 8.7 0 0 0 7.5 12.1 9 9 0 0 0 11 0 8.7 8.7 0 0 0 7.5-12.1A8.6 8.6 0 0 0 27 11.6 9 9 0 0 0 20 4.4Z" stroke="currentColor" stroke-width="2.2"/><path d="m12 14 16 9M12 23l16-9M20 9v22" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>';
 const copyIcon = '<svg viewBox="0 0 24 24"><rect x="8" y="8" width="12" height="12" rx="2"/><path d="M16 8V5a1 1 0 0 0-1-1H5a1 1 0 0 0-1 1v10a1 1 0 0 0 1 1h3"/></svg>';
 
@@ -24,10 +37,12 @@ function loadState() {
       chats: Array.isArray(saved.chats) ? saved.chats : [],
       activeId: saved.activeId || null,
       dark: Boolean(saved.dark),
-      model: saved.model || 'Instantâneo'
+      model: MODELS.some((model) => model.name === saved.model) ? saved.model : 'Astra 6',
+      effort: EFFORT_LEVELS.includes(saved.effort) ? saved.effort : 'Médio',
+      plan: PLANS.some((plan) => plan.name === saved.plan) ? saved.plan : 'Free'
     };
   } catch {
-    return { chats: [], activeId: null, dark: false, model: 'Instantâneo' };
+    return { chats: [], activeId: null, dark: false, model: 'Astra 6', effort: 'Médio', plan: 'Free' };
   }
 }
 
@@ -188,6 +203,7 @@ function closePopover() {
   popover.replaceChildren();
   activePopover = null;
   $('#modelSelect').setAttribute('aria-expanded', 'false');
+  $('#planButton').setAttribute('aria-expanded', 'false');
 }
 
 function menuButton(label, description, action) {
@@ -205,15 +221,51 @@ function showMenu(kind, anchor) {
   if (activePopover === kind) { closePopover(); return; }
   popover.replaceChildren();
   activePopover = kind;
+  popover.className = `popover${kind === 'model' || kind === 'plans' ? ' popover-wide' : ''}`;
   const rect = anchor.getBoundingClientRect();
-  popover.style.left = `${Math.max(12, Math.min(rect.left, window.innerWidth - 230))}px`;
+  const width = kind === 'model' || kind === 'plans' ? 340 : 230;
+  popover.style.left = `${Math.max(12, Math.min(rect.left, window.innerWidth - width - 12))}px`;
   popover.style.right = 'auto';
-  popover.style.top = `${Math.min(rect.bottom + 7, window.innerHeight - 230)}px`;
+  popover.style.top = `${Math.min(rect.bottom + 7, window.innerHeight - (kind === 'plans' ? 360 : kind === 'model' ? 480 : 230))}px`;
   if (kind === 'model') {
-    popover.append(menuButton('Instantâneo', 'Respostas rápidas', () => setModel('Instantâneo')));
-    popover.append(menuButton('Pensando', 'Respostas mais elaboradas', () => setModel('Pensando')));
-    popover.append(menuButton('Saiba mais sobre modelos', '', () => showToast('Os modelos são apenas uma opção visual neste protótipo.')));
+    popover.append(sectionLabel('Modelo'));
+    for (const model of MODELS) {
+      const option = menuButton(model.name, model.description, () => setModel(model.name));
+      option.classList.toggle('selected-option', state.model === model.name);
+      option.setAttribute('aria-pressed', String(state.model === model.name));
+      popover.append(option);
+    }
+    popover.append(divider());
+    popover.append(sectionLabel('Nível de esforço'));
+    const effortGrid = document.createElement('div');
+    effortGrid.className = 'effort-grid';
+    for (const level of EFFORT_LEVELS) {
+      const option = document.createElement('button');
+      option.className = `effort-choice${state.effort === level ? ' selected-option' : ''}`;
+      option.type = 'button';
+      option.textContent = level;
+      option.setAttribute('aria-pressed', String(state.effort === level));
+      option.addEventListener('click', () => { closePopover(); setEffort(level); });
+      effortGrid.append(option);
+    }
+    popover.append(effortGrid);
+    popover.append(divider());
+    popover.append(menuButton('Sobre este protótipo', 'Os modelos e níveis são demonstrativos', () => showToast('Nenhum modelo de IA está conectado.')));
     $('#modelSelect').setAttribute('aria-expanded', 'true');
+  } else if (kind === 'plans') {
+    popover.append(sectionLabel('Escolha um plano'));
+    for (const plan of PLANS) {
+      const option = menuButton(`${plan.name}${state.plan === plan.name ? ' · atual' : ''}`, `${plan.description} — ${plan.detail}`, () => setPlan(plan.name));
+      option.classList.toggle('selected-option', state.plan === plan.name);
+      option.setAttribute('aria-pressed', String(state.plan === plan.name));
+      popover.append(option);
+    }
+    popover.append(divider());
+    const note = document.createElement('p');
+    note.className = 'popover-note';
+    note.textContent = 'Planos demonstrativos. Não há cobrança nem recursos pagos ativos.';
+    popover.append(note);
+    $('#planButton').setAttribute('aria-expanded', 'true');
   } else if (kind === 'more') {
     popover.append(menuButton(state.dark ? 'Usar tema claro' : 'Usar tema escuro', 'Alternar aparência', toggleTheme));
     const divider = document.createElement('div'); divider.className = 'menu-divider'; popover.append(divider);
@@ -227,10 +279,40 @@ function showMenu(kind, anchor) {
   popover.hidden = false;
 }
 
+function sectionLabel(label) {
+  const heading = document.createElement('div');
+  heading.className = 'popover-section-label';
+  heading.textContent = label;
+  return heading;
+}
+
+function divider() {
+  const line = document.createElement('div');
+  line.className = 'menu-divider';
+  return line;
+}
+
+function renderModelSelect() {
+  $('#modelSelect').innerHTML = `<span>ChatGPT</span><span class="model-tier">${state.model} · esforço ${state.effort.toLocaleLowerCase('pt-BR')} ▾</span>`;
+  $('#modelSelect').setAttribute('aria-label', `ChatGPT, modelo ${state.model}, esforço ${state.effort}`);
+}
+
 function setModel(model) {
   state.model = model; saveState();
-  $('#modelSelect').innerHTML = `<span>ChatGPT</span><span class="model-tier">${model === 'Pensando' ? 'Pensando ▾' : 'Instantâneo ▾'}</span>`;
-  showToast(`Modo ${model.toLocaleLowerCase('pt-BR')} selecionado.`);
+  renderModelSelect();
+  showToast(`${model} selecionado.`);
+}
+
+function setEffort(level) {
+  state.effort = level; saveState(); renderModelSelect();
+  showToast(`Nível de esforço ${level.toLocaleLowerCase('pt-BR')} selecionado.`);
+}
+
+function setPlan(plan) {
+  state.plan = plan; saveState();
+  $('#planSummary').textContent = `Plano atual: ${plan}`;
+  $('#profilePlan').textContent = `Plano ${plan}`;
+  showToast(`Plano ${plan} selecionado para esta demonstração.`);
 }
 
 function toggleTheme() {
@@ -282,11 +364,11 @@ $('#searchButton').addEventListener('click', () => {
 $('#libraryButton').addEventListener('click', () => showToast('A biblioteca não está conectada neste protótipo.'));
 $('#addProject').addEventListener('click', () => showToast('Projetos são apenas demonstrativos nesta versão.'));
 $('#newProject').addEventListener('click', () => showToast('Projetos não estão conectados neste protótipo.'));
-$('#planButton').addEventListener('click', () => showToast('Esta versão local não oferece planos ou pagamentos.'));
+$('#planButton').addEventListener('click', (event) => showMenu('plans', event.currentTarget));
 $('#profileButton').addEventListener('click', () => showToast('Perfil de demonstração — nenhuma conta conectada.'));
 for (const button of document.querySelectorAll('.suggestion')) button.addEventListener('click', () => sendMessage(button.dataset.prompt));
 document.addEventListener('click', (event) => {
-  if (!popover.hidden && !popover.contains(event.target) && !event.target.closest('#modelSelect, #moreButton, #toolsButton')) closePopover();
+  if (!popover.hidden && !popover.contains(event.target) && !event.target.closest('#modelSelect, #planButton, #moreButton, #toolsButton')) closePopover();
 });
 document.addEventListener('keydown', (event) => {
   if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'k') { event.preventDefault(); newChat(); }
@@ -294,7 +376,9 @@ document.addEventListener('keydown', (event) => {
 });
 
 document.body.classList.toggle('dark', state.dark);
-if (state.model !== 'Instantâneo') $('#modelSelect').innerHTML = `<span>ChatGPT</span><span class="model-tier">${state.model} ▾</span>`;
+renderModelSelect();
+$('#planSummary').textContent = `Plano atual: ${state.plan}`;
+$('#profilePlan').textContent = `Plano ${state.plan}`;
 renderHistory();
 renderChat();
 resizeInput();

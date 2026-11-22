@@ -9,6 +9,7 @@ Abra `index.html` em um navegador moderno. Não há instalação nem servidor ne
 ## Limites desta versão
 
 - As respostas são exemplos locais; nenhum modelo de IA ou serviço online está conectado.
+- Astra 6, Luna 6, Orion 5 e Vega 5 são nomes demonstrativos. Os níveis de esforço e os planos Free, Plus, Pro e Team são apenas controles visuais, sem cobrança ou recursos reais.
 - Pesquisa na web, voz, anexos, projetos, biblioteca, compartilhamento de conversas e conta são itens visuais demonstrativos.
 - O histórico fica no armazenamento local deste navegador. Use **Limpar conversas** no menu para removê-lo.
 

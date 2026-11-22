@@ -35,15 +35,15 @@
         <div class="history-list" id="historyList" aria-label="Conversas recentes"></div>
 
         <div class="sidebar-bottom">
-          <button class="plan-card" id="planButton"><span class="sparkle">✦</span><span><strong>Conheça os planos</strong><small>Mais recursos para você</small></span><span class="chevron">›</span></button>
-          <button class="profile" id="profileButton"><span class="avatar">G</span><span class="profile-copy"><strong>Gustavo</strong><small>Plano gratuito</small></span><svg class="more-icon" viewBox="0 0 24 24"><circle cx="5" cy="12" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/></svg></button>
+          <button class="plan-card" id="planButton" aria-haspopup="dialog" aria-expanded="false"><span class="sparkle">✦</span><span><strong>Planos</strong><small id="planSummary">Plano atual: Free</small></span><span class="chevron">›</span></button>
+          <button class="profile" id="profileButton"><span class="avatar">G</span><span class="profile-copy"><strong>Gustavo</strong><small id="profilePlan">Plano Free</small></span><svg class="more-icon" viewBox="0 0 24 24"><circle cx="5" cy="12" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/></svg></button>
         </div>
       </aside>
 
       <main class="main-panel">
         <header class="topbar">
           <button class="icon-button open-sidebar" id="openSidebar" aria-label="Abrir barra lateral" title="Abrir barra lateral"><svg viewBox="0 0 24 24"><rect x="3.5" y="4" width="17" height="16" rx="3"/><path d="M9 4v16"/></svg></button>
-          <div class="topbar-title"><button class="model-select" id="modelSelect" aria-haspopup="listbox" aria-expanded="false"><span>ChatGPT</span><span class="model-tier">▾</span></button></div>
+          <div class="topbar-title"><button class="model-select" id="modelSelect" aria-haspopup="dialog" aria-expanded="false"><span>ChatGPT</span><span class="model-tier">Astra 6 · esforço médio ▾</span></button></div>
           <div class="topbar-actions"><button class="share-button" id="shareButton"><svg viewBox="0 0 24 24"><path d="M12 15V3m0 0L7.5 7.5M12 3l4.5 4.5M5 13v6h14v-6"/></svg><span>Compartilhar</span></button><button class="icon-button more-button" id="moreButton" aria-label="Mais opções"><svg viewBox="0 0 24 24"><circle cx="5" cy="12" r="1.2"/><circle cx="12" cy="12" r="1.2"/><circle cx="19" cy="12" r="1.2"/></svg></button></div>
         </header>
 
